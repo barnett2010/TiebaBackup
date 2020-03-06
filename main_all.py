@@ -86,8 +86,9 @@ def Init(pid, overwrite):
     if (OutputHTML):
         FileHandle = open("%s/%d.html" % (DirName, pid), "w", encoding="utf-8")
         Write('<!doctype html><html lang="zh-cn"><head><link rel="stylesheet"'
-              ' type="text/css" href="main.css"></head><body><div id="write">')
-        shutil.copy("main.css", DirName+"/")
+              ' type="text/css" href="main.css"><title>一个备份站...</title><link rel="shortcut icon" href="favicon.ico"></head><body><div id="write">')
+        shutil.copy("./resources/main.css", DirName+"/")
+        shutil.copy("./resources/favicon.ico", DirName+"/")
     else:
         FileHandle = open("%s/%d.md" % (DirName, pid), "w", encoding="utf-8")
     try:
