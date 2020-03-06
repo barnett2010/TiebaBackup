@@ -154,7 +154,7 @@ def Retry(func, args=None, kwargs=None, cfunc=None, ffunc=None, fargs=None, fkwa
     while (times):
         try:
             resp = CallFunc(func, args, kwargs)
-        except Exception as err:
+        except Exception:
             CallFunc(ffunc, fargs, fkwargs)
             times = max(-1, times-1)
             time.sleep(sleep)
@@ -166,7 +166,7 @@ def Retry(func, args=None, kwargs=None, cfunc=None, ffunc=None, fargs=None, fkwa
     if (fg):
         raise RetryCheckFailed(func.__qualname__, args, cfunc.__qualname__, resp)
     else:
-        raise RetryExhausted(func.__qualname__, args, cfunc.__qualname__) from err
+        raise RetryExhausted(func.__qualname__, args, cfunc.__qualname__)
 
 
 def Write(content):
@@ -290,7 +290,7 @@ def ProcessEmotion(floor, name, text):
     else:
         Avalon.warning("第%s楼出现未知表情:%s\n" % (floor, name), front="\n")
         return ''
-    if (not name in IsDownload):
+    if (name not in IsDownload):
         IsDownload.add(name)
         Pool.Download(url, "images/%s" % name)
     return '<img src="images/%s" alt="%s" title="%s" />' % (name, text, text)
@@ -394,6 +394,25 @@ def GetPost(pid, lz, comment):
         lastfid = fid
 
 
+def copydir_overwrite(_from_path, _to_path):
+    if os.path.exists(_from_path):
+        if os.path.exists(_to_path):
+            Avalon.warning("目标目录已存在，删除ing...")
+            try:
+                shutil.rmtree(_to_path)
+            except Exception as err1:
+                Avalon.error("删除目标文件失败，此次复制取消\n" + str(err1))
+                return 1
+        try:
+            shutil.copytree(_from_path, _to_path)
+        except Exception as err2:
+            Avalon.error("复制失败！\n" + str(err2))
+        else:
+            Avalon.info("复制成功")
+    else:
+        Avalon.warning("源目录不存在，跳过")
+
+
 def send_wxmsg(_sckey, _title="标题", _context="正文"):
     url = "https://sc.ftqq.com/%s.send" % (_sckey)
     _context = _context + "     " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -410,7 +429,6 @@ def send_wxmsg(_sckey, _title="标题", _context="正文"):
             Avalon.warning("返回值：%s" % (msg_back["errmsg"]))
     except Exception:
         Avalon.error("消息发送错误")
-
 
 
 '''
@@ -445,6 +463,7 @@ while (1):
 '''
 PreSet = False  # 批量模式关
 overwrite = 2  # 1为跳过，2为默认覆盖
+copy = 1  # 选择是否把备份好的文件拷贝到网站目录
 sckey = ""  # 可选
 while (1):
     try:
@@ -495,11 +514,12 @@ while (1):
     except RequestError as err:
         err = err.data
         Avalon.error("百度贴吧API返回错误,代码:%d\n描述:%s" % (err["code"], err["msg"]), front="\n")
-    except Exception as err:
+    except Exception:
         ForceStop()
         Avalon.error("发生异常:\n"+traceback.format_exc(), front="\n")
         exit(0)
     else:
+        #  以下--删除3天以前的备份
         Avalon.info("删除3天以前的备份...")
         Dirname_backuped = DirName + "-" + time.strftime("%Y%m%d-%Hh", time.localtime(int(time.time())-86400*3))
         if os.path.exists(Dirname_backuped):
@@ -507,6 +527,13 @@ while (1):
             Avalon.info("删除完毕")
         else:
             Avalon.warning("未发现3天前的备份，跳过")
+        #  以下--复制文件到网站目录
+        if copy == 1:
+            Avalon.info("准备复制文件到网站目录----")
+            copydir_overwrite(_from_path="./%s" % (DirName), _to_path="/www/wwwroot/yoursite/target-dir")  # 记得修改
+        elif copy == 0:
+            Avalon.info("跳过 复制文件到网站目录")
+        #  以下--向server酱推送消息
         if not sckey == "":
             Avalon.info("尝试向Server酱推送消息……")
             send_wxmsg(_sckey=sckey, _title="贴吧备份-全部楼层", _context="今日份的备份已完成...一切顺利..Maybe..")
