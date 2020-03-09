@@ -1,4 +1,4 @@
-## 百度贴吧帖子备份
+# 百度贴吧帖子备份
 
 该分支基于master修改，是适合服务器部署的线上版本。
 
@@ -11,7 +11,7 @@
 
 ---
 
-### Features
+## Features
 
 - 去除用户交互（参数请自行编辑脚本配置）
 - 在"只看楼主" 模式默认开启保存楼中楼
@@ -22,13 +22,13 @@
 ![](https://github.com/hui-shao/TiebaBackup/blob/online/demo.png)
 ![](https://github.com/hui-shao/TiebaBackup/blob/online/wx.jpg)
 
-### How to use:
+## How to use:
 
 <hr>
 
-##### 环境配置
+#### 环境配置
 
-Linux:
+**Linux:**
 
 ```bash
 apt-get install python3 python3-pip
@@ -36,7 +36,7 @@ pip3 install -r requirements.txt
 python3 main.py
 ```
 
-Windows:
+**Windows:**
 
 在[ 官网 ](https://www.python.org/downloads/)下载python3.6或以上版本
 
@@ -47,12 +47,12 @@ python3 main.py
 
 <br>
 
-##### 一些参数
+#### 参数说明
 
 | Var name       | Value                | Type          | Description                                |
 |:------------:  |:--------------------:|:-------------:|:-------------------------------------------|
 | pids           | [12345678, 12345679] | list (int)    | 帖子 ID 列表                                    |
-| DirNames       | ["dir1", "dir2"]     | list (string) | 用于保存帖子的目录名，与上述每个帖子一一对应。<br>若留空( "" )，则使用"吧名-帖子标题"（不推荐，系统对目录长度有限制） |
+| DirNames       | ["dir1", "dir2"]     | list (string) | 用于保存帖子的目录名，与上述每个帖子一一对应。<br>若留空( "" )，则使用"吧名-帖子标题"<br>p.s. 不推荐留空，系统对目录长度通常有限制 |
 | overwrite      | 1 / **2**            | int           | 是否覆盖已备份的文件<br>1为跳过，2为覆盖，其他值交互     |
 | copy           | 0 / **1**            | int           | 是否把备份好的文件拷贝到网站目录<br>0为否，1为是，其他值交互   |
 | sckey          | "xxxxxxxxxxx"        | string        | 用于Server酱推送的Key，没有请留空<br>可以到 [这里](http://sc.ftqq.com/3.version) 获取   |
@@ -61,7 +61,7 @@ python3 main.py
 
 <br>
 
-##### 其他说明
+#### 其他说明
 
 - 在不同的平台下，需要注意 py 文件的 “换行符(Line-Ending)”：`CRLF(Windows) / LF(Unix)`
 
@@ -69,7 +69,7 @@ python3 main.py
 
 <br>
 
-##### 部署自动化(Linux)
+#### 部署自动化(Linux)
 
 使用 `crontab -e` 创建自动化，表示每天 11:30 和 23:30 时执行备份。例如：
 
@@ -91,11 +91,11 @@ python3 main.py
 
 <br>
 
-### Change log:
+## Change log:
 
 ---
 
-##### 2020.03.09
+#### 2020.03.09
 
 1. 适配 批量模式(list + for)
 2. 优化 控制台信息输出的内容
@@ -104,12 +104,12 @@ python3 main.py
     - 删除3天前的备份文件时，因“目录非空，无法删除”而报错的问题
     - 程序运行目录与脚本文件所在目录不一致时，无法找到网页文件并复制的问题
 
-##### 2020.03.06
+#### 2020.03.06
 
 1. 支持 自动拷贝备份文件（html）到网站目录
 2. 为网页新增 icon 和 title ，可能缓解某些情况下卡顿的问题
 3. 修复一些"小Bug"
 
-##### 2020.03.05
+#### 2020.03.05
 
 1. 诞生
