@@ -2,6 +2,7 @@ import hashlib
 import time
 import const
 import os
+import sys
 import shutil
 import requests
 import html
@@ -416,7 +417,7 @@ def copydir_overwrite(_from_path, _to_path):
 
 def send_wxmsg(_sckey, _title="标题", _context="正文"):
     url = "https://sc.ftqq.com/%s.send" % (_sckey)
-    _context = _context + "     " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    _context = _context + "     \n\n" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     data = {
         "text": "%s" % (_title),
         "desp": "%s" % (_context)
@@ -433,76 +434,50 @@ def send_wxmsg(_sckey, _title="标题", _context="正文"):
 
 
 '''
-while (1):
-    try:
-        if (Avalon.ask("批量模式?", False)):
-            PreSet = True
-            lz = Avalon.ask("只看楼主?", False)
-            comment = (0 if lz else Avalon.ask("包括评论?", True))
-            OutputHTML = Avalon.ask("输出HTML(否则表示输出Makrdown)?:", True)
-            overwrite = Avalon.ask("默认覆盖?", False)
-            Avalon.info("选定:%s && %s评论 , 目录:\"吧名\\标题\"" % (("楼主" if lz else "全部"), ("全" if comment else "无")))
-            if (not Avalon.ask("确认无误?", True)):
-                Avalon.warning("请重新输入")
-            else:
-                break
-        else:
-            PreSet = False
-            break
-    except KeyboardInterrupt:
-        ForceStop()
-        Avalon.error("Control-C,exiting", front="\n")
-        exit(0)
-'''
-
-'''
 #####################
 #                   #
 #    Code START     #
 #                   #
 #####################
 '''
-PreSet = False  # 批量模式关
+pids = [123456788, 123456789]  # 帖子的pid列表
+DirNames = ["dir1", "dir2"]  # 设置保存文件的目录名，与上述帖子一一对应。若留空 如 "" 则默认使用吧名-帖子标题（不推荐，通常系统对目录长度有限制）
 overwrite = 2  # 1为跳过，2为默认覆盖
 copy = 1  # 选择是否把备份好的文件拷贝到网站目录
 sckey = ""  # 可选
-while (1):
+
+os.chdir(sys.path[0])  # 切换至脚本文件所在目录
+DirName_flag = 0
+for pid in pids:
     try:
-        pid = 123456789  # 帖子id，请修改
-        if (pid == 0):
-            exit(0)
         Avalon.info("当前时间: " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time()))))
         Avalon.info("帖子id: %d" % pid)
         title = GetTitle(pid)
         title["forum"] = re.sub(r"[\/\\\:\*\?\"\<\>\|]", "_", title["forum"])
         title["post"] = re.sub(r"[\/\\\:\*\?\"\<\>\|]", "_", title["post"])
-        if (not PreSet):
-            #  lz = Avalon.ask("只看楼主?", False)
-            lz = True
-            Avalon.info("只看楼主: " + str(lz))
-            #  comment = (0 if lz else Avalon.ask("包括评论?", True))
-            '''只看楼主模式下，爬取楼中楼待测试 --- 测试通过'''
-            comment = True
-            Avalon.info("包括评论: " + str(comment))
-            #  DirName = Avalon.gets("文件夹名(空则表示使用\"吧名\\标题\"):")
-            DirName = "saved_lz"
-            Avalon.info("目录名: " + DirName)
-            if os.path.exists(DirName):  # 备份一下本地已经爬到的文件
-                Avalon.info("备份本地已经爬到的文件")
-                try:
-                    os.rename(DirName, DirName + "-" + time.strftime("%Y%m%d-%Hh", time.localtime(int(time.time()))))
-                except OSError:
-                    Avalon.info("备份文件已经存在")
-            #  OutputHTML = Avalon.ask("输出HTML(否则表示输出Makrdown)?:", True)
-            OutputHTML = True
-            Avalon.info("输出为Html: " + str(OutputHTML))
-            if (len(DirName) == 0):
-                DirName = title["forum"]+"\\"+title["post"]
-            Avalon.info("id: %d , 选定: %s && %s评论 , 目录: \"%s\"" % (pid, ("楼主" if lz else "全部"), ("全" if comment else "无"), DirName))
-            Init(pid, overwrite)
-        else:
-            DirName = title["forum"]+"\\"+title["post"]
-            Init(pid, int(overwrite)+1)
+        #  lz = Avalon.ask("只看楼主?", False)
+        lz = True
+        Avalon.info("只看楼主: " + str(lz))
+        #  comment = (0 if lz else Avalon.ask("包括评论?", True))
+        '''只看楼主模式下，爬取楼中楼待测试 --- 测试通过'''
+        comment = True
+        Avalon.info("包括评论: " + str(comment))
+        #  DirName = Avalon.gets("文件夹名(空则表示使用\"吧名-标题\"):")
+        DirName = DirNames[DirName_flag]
+        Avalon.info("目录名: " + DirName)
+        if os.path.exists(DirName):  # 备份一下本地已经爬到的文件
+            Avalon.info("备份本地已经爬到的文件")
+            try:
+                os.rename(DirName, DirName + "-" + time.strftime("%Y%m%d-%Hh", time.localtime(int(time.time()))))
+            except OSError:
+                Avalon.info("备份文件已经存在")
+        #  OutputHTML = Avalon.ask("输出HTML(否则表示输出Makrdown)?:", True)
+        OutputHTML = True
+        Avalon.info("输出为Html: " + str(OutputHTML))
+        if (len(DirName) == 0):
+            DirName = title["forum"]+"-"+title["post"]
+        Avalon.info("id: %d , 选定: %s && %s评论 , 目录: \"%s\"" % (pid, ("楼主" if lz else "全部"), ("全" if comment else "无"), DirName))
+        Init(pid, overwrite)
         GetPost(pid, lz, comment)
         Done()
         ConvertAudio()
@@ -524,22 +499,31 @@ while (1):
         Avalon.info("删除3天以前的备份...")
         Dirname_backuped = DirName + "-" + time.strftime("%Y%m%d-%Hh", time.localtime(int(time.time())-86400*3))
         if os.path.exists(Dirname_backuped):
-            os.removedirs(Dirname_backuped)
+            Avalon.warning("检测到3天前的备份，删除ing...")
+            shutil.rmtree(Dirname_backuped)
             Avalon.info("删除完毕")
         else:
             Avalon.warning("未发现3天前的备份，跳过")
         #  以下--复制文件到网站目录
         if copy == 1:
             Avalon.info("准备复制文件到网站目录----")
-            copydir_overwrite(_from_path="./%s" % (DirName), _to_path="/www/wwwroot/yoursite/target-dir")  # 记得修改
+            copydir_overwrite(_from_path="./%s" % (DirName), _to_path="/www/wwwroot/yoursite/target-dir/%s" % (DirName))  # 记得修改
         elif copy == 0:
             Avalon.info("跳过 复制文件到网站目录")
         #  以下--向server酱推送消息
         if not sckey == "":
             Avalon.info("尝试向Server酱推送消息……")
-            send_wxmsg(_sckey=sckey, _title="贴吧备份-仅看楼主", _context="今日份的备份已完成...一切顺利..Maybe..")
+            send_wxmsg(_sckey=sckey, _title="贴吧备份（仅看楼主）", _context="今日份的备份已完成...\n\n一切顺利..Maybe..\n\n帖子id：%d" % pid)
         else:
             Avalon.warning("SCKEY为空，跳过微信推送")
         Avalon.info("完成 %d" % pid)
-    if (not PreSet):
-        break
+    try:
+        if (pids.index(pid) < len(pids) - 1):
+            Avalon.info("10s后进行下一个帖子...\n", front="\n\n")
+            time.sleep(10)
+            DirName_flag = DirName_flag + 1
+        else:
+            Avalon.info("全部帖子已经备份完成！", front="\n\n")
+    except KeyboardInterrupt:
+        Avalon.error("Control-C,exiting", front="\n")
+        exit(0)

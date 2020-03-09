@@ -51,14 +51,13 @@ python3 main.py
 
 | Var name       | Value                | Type          | Description                                |
 |:------------:  |:--------------------:|:-------------:|:-------------------------------------------|
-| PreSet         | True / **False**     | bool          | 批量模式（自动版暂不支持 / *制作ing*）        |
-| overwrite      | 1 / **2**            | int           |   是否覆盖（1为跳过，2为覆盖，其他值交互）     |
-| copy           | 0 / **1**            | int           | 是否把备份好的文件拷贝到网站目录（0为否，1为是，其他值交互）   |
-| sckey          | "xxxxxxxxxxx"        | string        | 用于Server酱推送的Key，没有请留空             |
-| pid            | 123456789            | int           | 帖子 ID                                       |
-| lz             | True / False         | bool          | 只看楼主模式 |
+| pids           | [12345678, 12345679] | list (int)    | 帖子 ID 列表                                    |
+| DirNames       | ["dir1", "dir2"]     | list (string) | 用于保存帖子的目录名，与上述每个帖子一一对应。<br>若留空( "" )，则使用"吧名-帖子标题"（不推荐，系统对目录长度有限制） |
+| overwrite      | 1 / **2**            | int           | 是否覆盖已备份的文件<br>1为跳过，2为覆盖，其他值交互     |
+| copy           | 0 / **1**            | int           | 是否把备份好的文件拷贝到网站目录<br>0为否，1为是，其他值交互   |
+| sckey          | "xxxxxxxxxxx"        | string        | 用于Server酱推送的Key，没有请留空<br>可以到 [这里](http://sc.ftqq.com/3.version) 获取   |
+| lz             | True / False         | bool          | 是否使用“只看楼主”模式 |
 | comment        | **True** / False     | bool          | 是否包含楼中楼（评论） |
-| DirName        | "xxxxxx"             | string        | 用于保存文件的目录名 |
 
 <br>
 
@@ -95,6 +94,15 @@ python3 main.py
 ### Change log:
 
 ---
+
+##### 2020.03.09
+
+1. 适配 批量模式(list + for)
+2. 优化 控制台信息输出的内容
+3. 优化 Server酱推送消息内容的排版
+4. 修复一些Bug：
+    - 删除3天前的备份文件时，因“目录非空，无法删除”而报错的问题
+    - 程序运行目录与脚本文件所在目录不一致时，无法找到网页文件并复制的问题
 
 ##### 2020.03.06
 
