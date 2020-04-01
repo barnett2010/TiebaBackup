@@ -25,6 +25,7 @@ import threading
 # into windows color sequences
 if sys.platform == 'win32':
     from colorama import init
+
     init()
 else:
     import syslog
@@ -44,7 +45,7 @@ class Avalon:
     # optional thread lock
     thread_lock = None
 
-    class FG():
+    class FG:
         """ Foreground Colors
 
         This class contains all foreground colors.
@@ -71,7 +72,7 @@ class Avalon:
         LC = '\033[96m'  # Light Cyan
         W = '\033[97m'  # White
 
-    class BG():
+    class BG:
         """ Foreground Colors
 
         This class contains all background colors.
@@ -94,7 +95,7 @@ class Avalon:
         LC = '\033[106m'  # Light Cyan
         WT = '\033[107m'  # White
 
-    class FM():
+    class FM:
         """ Formatting Sequences
 
         This class contains all formatting-related
@@ -152,7 +153,9 @@ class Avalon:
         """ print regular information with time stamp
         """
         import datetime
-        Avalon._print('{}{}{}{} [+] INFO: {}{}'.format(front, Avalon.FM.RST, str(datetime.datetime.now()), Avalon.FG.G, str(msg), Avalon.FM.RST), file)
+        Avalon._print(
+            '{}{}{}{} [+] INFO: {}{}'.format(front, Avalon.FM.RST, str(datetime.datetime.now()), Avalon.FG.G, str(msg),
+                                             Avalon.FM.RST), file)
         if log and sys.platform != 'win32':
             syslog.syslog(syslog.LOG_INFO, msg)
 
@@ -161,7 +164,9 @@ class Avalon:
         """ print information fo debugging
         """
         import datetime
-        Avalon._print('{}{}{} [+] INFO: {}{}'.format(front, Avalon.FG.DGR, str(datetime.datetime.now()), str(msg), Avalon.FM.RST), file)
+        Avalon._print(
+            '{}{}{} [+] INFO: {}{}'.format(front, Avalon.FG.DGR, str(datetime.datetime.now()), str(msg), Avalon.FM.RST),
+            file)
         if log and sys.platform != 'win32':
             syslog.syslog(syslog.LOG_DEBUG, msg)
 
@@ -216,7 +221,7 @@ class Avalon:
 
         elif default is False:
             while True:
-                ans = Avalon.gets(msg + ' [y/N]: ',front=front)
+                ans = Avalon.gets(msg + ' [y/N]: ', front=front)
                 if ans == '' or ans[0].upper() == 'N':
                     return False
                 elif ans[0].upper() == 'Y':
@@ -225,7 +230,7 @@ class Avalon:
                     Avalon.error('Invalid Input!')
         elif default is True:
             while True:
-                ans = Avalon.gets(msg + ' [Y/n]: ',front=front)
+                ans = Avalon.gets(msg + ' [Y/n]: ', front=front)
                 if ans == '' or ans[0].upper() == 'Y':
                     return True
                 elif ans[0].upper() == 'N':
