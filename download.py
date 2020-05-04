@@ -57,8 +57,13 @@ class DownloadPool():
 
     def Stop(self):
         self.StopLoop(self.DownLoop)
+        i = 0
         while (self.DownLoop.is_running()):
             time.sleep(0.5)
+            i += 1
+            if i >= 180:
+                print("\nWait Timeout. Force STOP ! (P=1)\n")
+                break
         self.ImgProc.close()
 
     async def GetRaw(self, session, url):
@@ -81,6 +86,11 @@ class DownloadPool():
         asyncio.run_coroutine_threadsafe(self.AsyncDownload(url, filename), self.DownLoop)
 
     async def CheckDone(self, loop):
+        i = 0
         while (self.Running != 0):
             await asyncio.sleep(2)
+            i += 1
+            if i >= 90:
+                print("\nWait Timeout. Force STOP ! (P=2)\n")
+                break
         loop.stop()
