@@ -1,6 +1,8 @@
 # 百度贴吧帖子备份
 
-该分支基于master修改，是适合服务器部署的线上版本。
+重新搞了个分支做交互式的
+
+其实是源于 52pojie 某个网友的需求
 
 <p align="left">
 <img src="https://img.shields.io/badge/Python-3.x-brightgreen?style=flat-square">
@@ -13,14 +15,17 @@
 
 ## Features
 
-- 去除用户交互（参数请自行编辑脚本配置）
-- 在"只看楼主" 模式默认开启保存楼中楼
-- 接入 Server酱 消息推送
-- 自动备份已爬取帖子，防止覆盖数据时出现意外（三天以前的备份自动删除）
-- 支持自动拷贝备份文件(Html)到网站目录
+- 输入贴吧名，自动爬取选定页码范围的帖子
+- 筛选爬取精品贴
 
 ![](https://github.com/hui-shao/TiebaBackup/blob/online/demo.png)
 ![](https://github.com/hui-shao/TiebaBackup/blob/online/wx.jpg)
+
+
+## 说明
+- main.py  自动爬取指定贴吧、指定页码范围的帖子
+- main_good.py  仅爬取精品区的帖子，其余同上
+- main_manual.py  手动输入帖子id，支持批量
 
 ## How to use:
 
@@ -51,8 +56,7 @@ python3 main.py
 
 | Var name       | Value                | Type          | Description                                |
 |:------------:  |:--------------------:|:-------------:|:-------------------------------------------|
-| pids           | [12345678, 12345679] | list (int)    | 帖子 ID 列表                                    |
-| DirNames       | ["dir1", "dir2"]     | list (string) | 用于保存帖子的目录名，与上述每个帖子一一对应。<br>若留空( "" )，则使用"吧名-帖子标题"<br>p.s. 不推荐留空，系统对目录长度通常有限制 |
+| pids           | [12345678, 12345679] | list (int)    | 帖子 ID 列表  （仅用于 main_manual.py）        |
 | overwrite      | 1 / **2**            | int           | 是否覆盖已备份的文件<br>1为跳过，2为覆盖，其他值交互     |
 | copy           | 0 / **1**            | int           | 是否把备份好的文件拷贝到网站目录<br>0为否，1为是，其他值交互   |
 | sckey          | "xxxxxxxxxxx"        | string        | 用于Server酱推送的Key，没有请留空<br>可以到 [这里](http://sc.ftqq.com/3.version) 获取   |
