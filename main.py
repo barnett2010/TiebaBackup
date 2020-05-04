@@ -177,8 +177,9 @@ def Init(pid, overwrite, _DirName):
     Progress = tqdm(unit="floor")
 
 
-def ConvertAudio():
-    global AudioCount, DirName, FFmpeg
+def ConvertAudio(_DirName):
+    global AudioCount, FFmpeg
+    DirName = save_path + _DirName
     if (not FFmpeg) or (not AudioCount):
         return
     for i in tqdm(range(1, AudioCount + 1), unit="audio", ascii=True):
@@ -543,7 +544,7 @@ if __name__ == '__main__':
             Init(pid, overwrite, DirName)
             GetPost(pid, lz, comment)
             Done()
-            ConvertAudio()
+            ConvertAudio(DirName)
         except KeyboardInterrupt:
             ForceStop()
             Avalon.error("Raised Control-C", front="\n")
