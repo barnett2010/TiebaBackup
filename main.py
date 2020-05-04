@@ -15,13 +15,12 @@ from download import DownloadPool
 from avalon import Avalon
 
 # Config
-pids = [3144441989, 123456789]  # 帖子的pid列表
-DirNames = ["dir1", "dir2"]  # 设置保存文件的目录名，与上述帖子一一对应。若留空 如 "" 则默认使用吧名-帖子标题（不推荐，通常系统对目录长度有限制）
+save_path = "./Backups/"  # 用于保存备份文件的路径，以 / 结尾
 lz = False  # 是否开启仅看楼主模式
 comment = True  # 是否包括楼中楼（楼层评论）
 OutputHTML = True  # 是否输出为 html？否则输出为 Markdown
 overwrite = 2  # 1为跳过，2为默认覆盖
-copy_to_website = 1  # 是否把备份好的文件拷贝到网站目录
+copy_to_website = 0  # 是否把备份好的文件拷贝到网站目录
 website_dir = "/www/wwwroot/yoursite/target-dir/"  # “拷贝”的目标文件夹，注意末尾需要有 /
 sckey = ""  # 用于server酱的消息推送,若不需要请保持现状
 # 以下默认无需修改
@@ -127,6 +126,7 @@ class Tools(object):
 
 
 def MakeDir(dirname):
+    dirname = save_path + dirname
     global IsCreate
     if dirname in IsCreate:
         return
@@ -139,12 +139,13 @@ def MakeDir(dirname):
     IsCreate.add(dirname)
 
 
-def Init(pid, overwrite):
+def Init(pid, overwrite, _DirName):
     global FileHandle, Progress, AudioCount, VideoCount, ImageCount, \
-        Pool, IsDownload, DirName, IsCreate, OutputHTML, FFmpeg
+        Pool, IsDownload, IsCreate, OutputHTML, FFmpeg
     IsDownload = set()
     IsCreate = set()
     AudioCount = VideoCount = ImageCount = 0
+    DirName = save_path + _DirName
     if os.path.isdir(DirName):
         Avalon.warning("\"%s\"已存在" % DirName)
         if overwrite == 1:
@@ -473,6 +474,33 @@ def GetPost(pid, lz, comment):
         lastfid = fid
 
 
+def GetThreads():
+    global pids
+    pids = []
+    try:
+        kw_name = Avalon.gets("请输入贴吧名:")
+        page_start = int(Avalon.gets("请输入开始页码:"))
+        page_end = int(Avalon.gets("请输入结束页码:"))
+    except Exception:
+        Avalon.error("发生异常:\n" + traceback.format_exc(), front="\n")
+        exit(0)
+    hea = {
+        'Host': 'tieba.baidu.com',
+        'Connection': 'keep-alive',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+    }
+    for page_n in range(page_start, page_end + 1):
+        url = "https://tieba.baidu.com/f?kw=%s&ie=utf-8&pn=%d" % (kw_name, 50 * (page_n - 1))
+        res = requests.get(url=url, headers=hea, timeout=(15, 30))
+        pids_apage = re.findall(r'href="/p/(\d*?)" title=', res.text)
+        for pid in pids_apage:
+            pids.append(int(pid))
+    return 0
+
+
 def customized_tools():
     #  以下--删除3天以前的备份
     Tools.delete_old_files()
@@ -491,8 +519,9 @@ def customized_tools():
 
 
 if __name__ == '__main__':
+    pids = []
     os.chdir(sys.path[0])  # 切换至脚本文件所在目录
-    DirName_flag = 0
+    GetThreads()
     for pid in pids:
         try:
             Avalon.info("当前时间: " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time()))))
@@ -504,24 +533,27 @@ if __name__ == '__main__':
             Avalon.info("只看楼主: " + str(lz))
             #  comment = (0 if lz else Avalon.ask("包括评论?", True))
             Avalon.info("包括评论: " + str(comment))
-            #  DirName = Avalon.gets("文件夹名(空则表示使用\"吧名-标题\"):")
-            DirName = DirNames[DirName_flag]
-            Avalon.info("目录名: " + DirName)
-            Tools.backup_existed_file()  # 备份已爬取的文件
+            # Tools.backup_existed_file()  # 备份已爬取的文件
             #  OutputHTML = Avalon.ask("输出HTML(否则表示输出Makrdown)?:", True)
             Avalon.info("输出为Html: " + str(OutputHTML))
-            if len(DirName) == 0:
-                DirName = title["forum"] + "-" + title["post"]
+            DirName = title["forum"] + "-" + title["post"]
+            DirName = re.sub(r'(/|\\|\?|\||\*|\:|\"|\<|\>|\.)', '', DirName)  # 去除不能当文件夹名的字符
             Avalon.info("id: %d , 选定: %s && %s评论 , 目录: \"%s\"" % (
                 pid, ("楼主" if lz else "全部"), ("全" if comment else "无"), DirName))
-            Init(pid, overwrite)
+            Init(pid, overwrite, DirName)
             GetPost(pid, lz, comment)
             Done()
             ConvertAudio()
         except KeyboardInterrupt:
             ForceStop()
-            Avalon.error("Control-C,exiting", front="\n")
-            exit(0)
+            Avalon.error("Raised Control-C", front="\n")
+            t_in = Avalon.gets("请选择：1.退出程序  2.退出当前帖子\n", front="\n")
+            if "1" in t_in:
+                exit(0)
+            elif "2" in t_in:
+                continue
+            else:
+                continue
         except UserCancelled:
             Avalon.warning("用户取消")
         except RequestError as err:
@@ -532,13 +564,12 @@ if __name__ == '__main__':
             Avalon.error("发生异常:\n" + traceback.format_exc(), front="\n")
             exit(0)
         else:
-            customized_tools()  # 运行自定义工具
+            # customized_tools()  # 运行自定义工具
             Avalon.info("完成 %d" % pid)
         try:
             if pids.index(pid) < len(pids) - 1:
                 Avalon.info("10s后进行下一个帖子...\n", front="\n\n")
                 time.sleep(10)
-                DirName_flag = DirName_flag + 1
             else:
                 Avalon.info("全部帖子已经备份完成！", front="\n\n")
         except KeyboardInterrupt:
