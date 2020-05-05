@@ -493,12 +493,20 @@ def GetThreads():
         'Accept-Encoding': 'gzip, deflate',
         'Accept-Language': 'zh-CN,zh;q=0.9'
     }
+    Avalon.info("开始采集主题帖ID...")
     for page_n in range(page_start, page_end + 1):
+        Avalon.info("当前进度: %d/%d" % (page_n, page_end + 1 - page_start), front="\r", end="")
         url = "https://tieba.baidu.com/f?kw=%s&ie=utf-8&pn=%d" % (kw_name, 50 * (page_n - 1))
         res = requests.get(url=url, headers=hea, timeout=(15, 30))
         pids_apage = re.findall(r'href="/p/(\d*?)" title=', res.text)
         for pid in pids_apage:
             pids.append(int(pid))
+        if page_n % 20 == 0:  # 每爬取20页，暂停10s
+            Avalon.info("暂停10s...         ", front="\r", end="")
+            sys.stdout.flush()
+            time.sleep(10)
+        sys.stdout.flush()
+    Avalon.info("主题帖采集完毕", front="\n")
     return 0
 
 
@@ -525,6 +533,7 @@ if __name__ == '__main__':
     GetThreads()
     for pid in pids:
         try:
+            Avalon.info("贴吧爬虫-全类帖子版本\n")
             Avalon.info("当前时间: " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time()))))
             Avalon.info("帖子id: %d" % pid)
             title = GetTitle(pid)
