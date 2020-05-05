@@ -198,8 +198,12 @@ def Done():
         Write('</div></body></html>')
     FileHandle.close()
     Progress.set_description("Waiting for the download thread...")
-    Pool.Stop()
+    err_status = Pool.Stop()
     Progress.close()
+    if err_status != 0:
+        with open(save_path + "errors.txt", "a", encoding="utf-8") as f_err_info:
+            f_err_info.writelines(pid)
+    return
 
 
 def ForceStop():

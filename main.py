@@ -197,8 +197,13 @@ def Done():
         Write('</div></body></html>')
     FileHandle.close()
     Progress.set_description("Waiting for the download thread...")
-    Pool.Stop()
+    err_status = Pool.Stop()
     Progress.close()
+    if err_status != 0:
+        with open(save_path + "errors.txt", "a", encoding="utf-8") as f_err_info:
+            f_err_info.writelines("https://tieba.baidu.com/p/" + str(pid))
+        Avalon.error(f"帖子 {pid} 可能出错, 帖子id已保存至 {save_path}errors.txt")
+    return
 
 
 def ForceStop():
@@ -533,7 +538,7 @@ if __name__ == '__main__':
     GetThreads()
     for pid in pids:
         try:
-            Avalon.info("贴吧爬虫-全类帖子版本\n")
+            Avalon.info("贴吧爬虫-全类帖子版本")
             Avalon.info("当前时间: " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time()))))
             Avalon.info("帖子id: %d" % pid)
             title = GetTitle(pid)
