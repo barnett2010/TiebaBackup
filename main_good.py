@@ -200,10 +200,14 @@ def Done():
     err_status = Pool.Stop()
     Progress.close()
     if err_status != 0:
-        with open(save_path + "errors.txt", "a", encoding="utf-8") as f_err_info:
-            f_err_info.writelines("https://tieba.baidu.com/p/" + str(pid))
-        Avalon.error(f"帖子 {pid} 可能出错, 帖子id已保存至 {save_path}errors.txt")
+        write_err_info()
     return
+
+
+def write_err_info():
+    with open(save_path + "errors.txt", "a", encoding="utf-8") as f_err_info:
+        f_err_info.writelines("https://tieba.baidu.com/p/" + str(pid))
+    Avalon.error(f"帖子 {pid} 可能出错, 帖子id已保存至 {save_path}errors.txt")
 
 
 def ForceStop():
@@ -562,6 +566,7 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             ForceStop()
             Avalon.error("Raised Control-C", front="\n")
+            write_err_info()
             t_in = Avalon.gets("请选择：1.退出程序  2.退出当前帖子\n", front="\n")
             if "1" in t_in:
                 exit(0)
