@@ -15,6 +15,7 @@ from download import DownloadPool
 from avalon import Avalon
 
 # Config
+save_path = "./Backups/"  # 用于保存备份文件的路径，以 / 结尾
 pids = [3144441989, 123456789]  # 帖子的pid列表
 DirNames = ["dir1", "dir2"]  # 设置保存文件的目录名，与上述帖子一一对应。若留空 如 "" 则默认使用吧名-帖子标题（不推荐，通常系统对目录长度有限制）
 lz = False  # 是否开启仅看楼主模式
@@ -127,6 +128,7 @@ class Tools(object):
 
 
 def MakeDir(dirname):
+    dirname = save_path + dirname
     global IsCreate
     if dirname in IsCreate:
         return
@@ -139,12 +141,13 @@ def MakeDir(dirname):
     IsCreate.add(dirname)
 
 
-def Init(pid, overwrite):
+def Init(pid, overwrite, _DirName):
     global FileHandle, Progress, AudioCount, VideoCount, ImageCount, \
-        Pool, IsDownload, DirName, IsCreate, OutputHTML, FFmpeg
+        Pool, IsDownload, IsCreate, OutputHTML, FFmpeg
     IsDownload = set()
     IsCreate = set()
     AudioCount = VideoCount = ImageCount = 0
+    DirName = save_path + _DirName
     if os.path.isdir(DirName):
         Avalon.warning("\"%s\"已存在" % DirName)
         if overwrite == 1:
@@ -176,8 +179,9 @@ def Init(pid, overwrite):
     Progress = tqdm(unit="floor")
 
 
-def ConvertAudio():
-    global AudioCount, DirName, FFmpeg
+def ConvertAudio(_DirName):
+    global AudioCount, FFmpeg
+    DirName = save_path + _DirName
     if (not FFmpeg) or (not AudioCount):
         return
     for i in tqdm(range(1, AudioCount + 1), unit="audio", ascii=True):
@@ -195,8 +199,17 @@ def Done():
         Write('</div></body></html>')
     FileHandle.close()
     Progress.set_description("Waiting for the download thread...")
-    Pool.Stop()
+    err_status = Pool.Stop()
     Progress.close()
+    if err_status != 0:
+        write_err_info()
+    return
+
+
+def write_err_info():
+    with open(save_path + "errors.txt", "a", encoding="utf-8") as f_err_info:
+        f_err_info.writelines("https://tieba.baidu.com/p/" + str(pid) + "\n")
+    Avalon.error(f"帖子 {pid} 可能出错, 帖子id已保存至 {save_path}errors.txt")
 
 
 def ForceStop():
@@ -337,6 +350,9 @@ def ProcessVideo(url, cover):
         return '\n<a href="%s"><img src="%s" title="点击查看视频"></a>\n' % (vname, cname)
 
 
+def ProcessQuoteVideo(url):
+    return '\n<a href="%s">点击查看外链视频</a>\n' % url
+
 def ProcessAudio(md5):
     global AudioCount, DirName, OutputHTML, FFmpeg
     MakeDir(DirName + "/audios")
@@ -376,30 +392,43 @@ def ProcessEmotion(floor, name, text):
 def ProcessContent(floor, data, in_comment):
     content = ""
     for s in data:
-        if str(s["type"]) == "0":
-            content += ProcessText(s["text"], in_comment)
-        elif str(s["type"]) == "1":
-            content += ProcessUrl(s["link"], s["text"])
-        elif str(s["type"]) == "2":
-            content += ProcessEmotion(floor, s["text"], s["c"])
-        elif str(s["type"]) == "3":
-            content += ProcessImg(s["origin_src"])
-        elif str(s["type"]) == "4":
-            content += ProcessText(s["text"], in_comment)
-        elif str(s["type"]) == "5":
-            content += ProcessVideo(s["link"], s["src"])
-        elif str(s["type"]) == "9":
-            content += ProcessText(s["text"], in_comment)
-        elif str(s["type"]) == "10":
-            content += ProcessAudio(s["voice_md5"])
-        elif str(s["type"]) == "11":
-            content += ProcessImg(s["static"])
-        elif str(s["type"]) == "20":
-            content += ProcessImg(s["src"])
+        try:
+            if str(s["type"]) == "0":
+                content += ProcessText(s["text"], in_comment)
+            elif str(s["type"]) == "1":
+                content += ProcessUrl(s["link"], s["text"])
+            elif str(s["type"]) == "2":
+                content += ProcessEmotion(floor, s["text"], s["c"])
+            elif str(s["type"]) == "3":
+                content += ProcessImg(s["origin_src"])
+            elif str(s["type"]) == "4":
+                content += ProcessText(s["text"], in_comment)
+            elif str(s["type"]) == "5":
+                try:
+                    content += ProcessVideo(s["link"], s["src"])
+                except KeyError:
+                    content += ProcessQuoteVideo(s["text"])
+            elif str(s["type"]) == "9":
+                content += ProcessText(s["text"], in_comment)
+            elif str(s["type"]) == "10":
+                content += ProcessAudio(s["voice_md5"])
+            elif str(s["type"]) == "11":
+                content += ProcessImg(s["static"])
+            elif str(s["type"]) == "20":
+                content += ProcessImg(s["src"])
+            else:
+                Avalon.warning("floor %s: content data wrong: \n%s\n" % (floor, str(s)), front="\n")
+                # raise UndifiedMsgType("content data wrong: \n%s\n"%str(s))
+        except KeyError:
+            write_err_info()
+            Avalon.error("KeyError! 建议修改源码中字典的Key\n" + traceback.format_exc(), front="\n")
+            content += '\n<a>[Error] 这里似乎出错了...类型 KeyError</a>\n'
+        except Exception:
+            write_err_info()
+            Avalon.error("发生异常:\n" + traceback.format_exc(), front="\n")
+            content += '\n<a>[Error] 这里似乎出错了...</a>\n'
         else:
-            Avalon.warning("floor %s: content data wrong: \n%s\n" % (floor, str(s)), front="\n")
-            # raise UndifiedMsgType("content data wrong: \n%s\n"%str(s))
-    return content
+            return content
 
 
 def ProcessFloor(floor, author, t, content):
@@ -512,16 +541,24 @@ if __name__ == '__main__':
             Avalon.info("输出为Html: " + str(OutputHTML))
             if len(DirName) == 0:
                 DirName = title["forum"] + "-" + title["post"]
+                DirName = re.sub(r'(/|\\|\?|\||\*|\:|\"|\<|\>|\.)', '', DirName)  # 去除不能当文件夹名的字符
             Avalon.info("id: %d , 选定: %s && %s评论 , 目录: \"%s\"" % (
                 pid, ("楼主" if lz else "全部"), ("全" if comment else "无"), DirName))
-            Init(pid, overwrite)
+            Init(pid, overwrite, DirName)
             GetPost(pid, lz, comment)
             Done()
-            ConvertAudio()
+            ConvertAudio(DirName)
         except KeyboardInterrupt:
             ForceStop()
-            Avalon.error("Control-C,exiting", front="\n")
-            exit(0)
+            Avalon.error("Raised Control-C", front="\n")
+            write_err_info()
+            t_in = Avalon.gets("请选择：1.退出程序  2.退出当前帖子\n", front="\n")
+            if "1" in t_in:
+                exit(0)
+            elif "2" in t_in:
+                continue
+            else:
+                continue
         except UserCancelled:
             Avalon.warning("用户取消")
         except RequestError as err:
