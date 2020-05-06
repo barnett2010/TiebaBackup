@@ -207,7 +207,7 @@ def Done():
 
 def write_err_info():
     with open(save_path + "errors.txt", "a", encoding="utf-8") as f_err_info:
-        f_err_info.writelines("https://tieba.baidu.com/p/" + str(pid))
+        f_err_info.writelines("https://tieba.baidu.com/p/" + str(pid) + "\n")
     Avalon.error(f"帖子 {pid} 可能出错, 帖子id已保存至 {save_path}errors.txt")
 
 
@@ -349,6 +349,9 @@ def ProcessVideo(url, cover):
         return '\n<a href="%s"><img src="%s" title="点击查看视频"></a>\n' % (vname, cname)
 
 
+def ProcessQuoteVideo(url):
+    return '\n<a href="%s">点击查看外链视频</a>\n' % url
+
 def ProcessAudio(md5):
     global AudioCount, DirName, OutputHTML, FFmpeg
     MakeDir(DirName + "/audios")
@@ -388,30 +391,43 @@ def ProcessEmotion(floor, name, text):
 def ProcessContent(floor, data, in_comment):
     content = ""
     for s in data:
-        if str(s["type"]) == "0":
-            content += ProcessText(s["text"], in_comment)
-        elif str(s["type"]) == "1":
-            content += ProcessUrl(s["link"], s["text"])
-        elif str(s["type"]) == "2":
-            content += ProcessEmotion(floor, s["text"], s["c"])
-        elif str(s["type"]) == "3":
-            content += ProcessImg(s["origin_src"])
-        elif str(s["type"]) == "4":
-            content += ProcessText(s["text"], in_comment)
-        elif str(s["type"]) == "5":
-            content += ProcessVideo(s["link"], s["src"])
-        elif str(s["type"]) == "9":
-            content += ProcessText(s["text"], in_comment)
-        elif str(s["type"]) == "10":
-            content += ProcessAudio(s["voice_md5"])
-        elif str(s["type"]) == "11":
-            content += ProcessImg(s["static"])
-        elif str(s["type"]) == "20":
-            content += ProcessImg(s["src"])
+        try:
+            if str(s["type"]) == "0":
+                content += ProcessText(s["text"], in_comment)
+            elif str(s["type"]) == "1":
+                content += ProcessUrl(s["link"], s["text"])
+            elif str(s["type"]) == "2":
+                content += ProcessEmotion(floor, s["text"], s["c"])
+            elif str(s["type"]) == "3":
+                content += ProcessImg(s["origin_src"])
+            elif str(s["type"]) == "4":
+                content += ProcessText(s["text"], in_comment)
+            elif str(s["type"]) == "5":
+                try:
+                    content += ProcessVideo(s["link"], s["src"])
+                except KeyError:
+                    content += ProcessQuoteVideo(s["text"])
+            elif str(s["type"]) == "9":
+                content += ProcessText(s["text"], in_comment)
+            elif str(s["type"]) == "10":
+                content += ProcessAudio(s["voice_md5"])
+            elif str(s["type"]) == "11":
+                content += ProcessImg(s["static"])
+            elif str(s["type"]) == "20":
+                content += ProcessImg(s["src"])
+            else:
+                Avalon.warning("floor %s: content data wrong: \n%s\n" % (floor, str(s)), front="\n")
+                # raise UndifiedMsgType("content data wrong: \n%s\n"%str(s))
+        except KeyError:
+            write_err_info()
+            Avalon.error("KeyError! 建议修改源码中字典的Key\n" + traceback.format_exc(), front="\n")
+            content += '\n<a>[Error] 这里似乎出错了...类型 KeyError</a>\n'
+        except Exception:
+            write_err_info()
+            Avalon.error("发生异常:\n" + traceback.format_exc(), front="\n")
+            content += '\n<a>[Error] 这里似乎出错了...</a>\n'
         else:
-            Avalon.warning("floor %s: content data wrong: \n%s\n" % (floor, str(s)), front="\n")
-            # raise UndifiedMsgType("content data wrong: \n%s\n"%str(s))
-    return content
+            return content
 
 
 def ProcessFloor(floor, author, t, content):
